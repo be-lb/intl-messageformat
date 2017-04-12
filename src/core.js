@@ -6,10 +6,10 @@ See the accompanying LICENSE file for terms.
 
 /* jslint esnext: true */
 
-import {extend, hop} from './utils';
-import {defineProperty, objCreate} from './es5';
+import { extend, hop } from './utils';
+import { defineProperty, objCreate } from './es5';
 import Compiler from './compiler';
-import parser from 'intl-messageformat-parser';
+import parser from './parser';
 
 export default MessageFormat;
 
@@ -18,7 +18,7 @@ export default MessageFormat;
 function MessageFormat(message, locales, formats) {
     // Parse string messages into an AST.
     var ast = typeof message === 'string' ?
-            MessageFormat.__parse(message) : message;
+        MessageFormat.__parse(message) : message;
 
     if (!(ast && ast.type === 'messageFormatPattern')) {
         throw new TypeError('A message must be provided as a String or AST.');
@@ -29,13 +29,13 @@ function MessageFormat(message, locales, formats) {
     formats = this._mergeFormats(MessageFormat.formats, formats);
 
     // Defined first because it's used to build the format pattern.
-    defineProperty(this, '_locale',  {value: this._resolveLocale(locales)});
+    defineProperty(this, '_locale', { value: this._resolveLocale(locales) });
 
     // Compile the `ast` to a pattern that is highly optimized for repeated
     // `format()` invocations. **Note:** This passes the `locales` set provided
     // to the constructor instead of just the resolved locale.
     var pluralFn = this._findPluralRuleFunction(this._locale);
-    var pattern  = this._compilePattern(ast, locales, formats, pluralFn);
+    var pattern = this._compilePattern(ast, locales, formats, pluralFn);
 
     // "Bind" `format()` method to `this` so it can be passed by reference like
     // the other `Intl` APIs.
@@ -65,53 +65,53 @@ defineProperty(MessageFormat, 'formats', {
         date: {
             'short': {
                 month: 'numeric',
-                day  : 'numeric',
-                year : '2-digit'
+                day: 'numeric',
+                year: '2-digit'
             },
 
             'medium': {
                 month: 'short',
-                day  : 'numeric',
-                year : 'numeric'
+                day: 'numeric',
+                year: 'numeric'
             },
 
             'long': {
                 month: 'long',
-                day  : 'numeric',
-                year : 'numeric'
+                day: 'numeric',
+                year: 'numeric'
             },
 
             'full': {
                 weekday: 'long',
-                month  : 'long',
-                day    : 'numeric',
-                year   : 'numeric'
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric'
             }
         },
 
         time: {
             'short': {
-                hour  : 'numeric',
+                hour: 'numeric',
                 minute: 'numeric'
             },
 
-            'medium':  {
-                hour  : 'numeric',
+            'medium': {
+                hour: 'numeric',
                 minute: 'numeric',
                 second: 'numeric'
             },
 
             'long': {
-                hour        : 'numeric',
-                minute      : 'numeric',
-                second      : 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric',
                 timeZoneName: 'short'
             },
 
             'full': {
-                hour        : 'numeric',
-                minute      : 'numeric',
-                second      : 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric',
                 timeZoneName: 'short'
             }
         }
@@ -119,27 +119,32 @@ defineProperty(MessageFormat, 'formats', {
 });
 
 // Define internal private properties for dealing with locale data.
-defineProperty(MessageFormat, '__localeData__', {value: objCreate(null)});
-defineProperty(MessageFormat, '__addLocaleData', {value: function (data) {
-    if (!(data && data.locale)) {
-        throw new Error(
-            'Locale data provided to IntlMessageFormat is missing a ' +
-            '`locale` property'
-        );
-    }
+defineProperty(MessageFormat, '__localeData__', { value: objCreate(null) });
+defineProperty(MessageFormat, '__addLocaleData', {
+    value: function (data) {
+        if (!(data && data.locale)) {
+            throw new Error(
+                'Locale data provided to IntlMessageFormat is missing a ' +
+                '`locale` property'
+            );
+        }
 
-    MessageFormat.__localeData__[data.locale.toLowerCase()] = data;
-}});
+        MessageFormat.__localeData__[data.locale.toLowerCase()] = data;
+    }
+});
+// Not so convenient to have it private though -pm
+defineProperty(MessageFormat, 'addLocaleData',
+    { value: MessageFormat.__addLocaleData });
 
 // Defines `__parse()` static method as an exposed private.
-defineProperty(MessageFormat, '__parse', {value: parser.parse});
+defineProperty(MessageFormat, '__parse', { value: parser.parse });
 
 // Define public `defaultLocale` property which defaults to English, but can be
 // set by the developer.
 defineProperty(MessageFormat, 'defaultLocale', {
     enumerable: true,
-    writable  : true,
-    value     : undefined
+    writable: true,
+    value: undefined
 });
 
 MessageFormat.prototype.resolvedOptions = function () {
@@ -156,7 +161,7 @@ MessageFormat.prototype._compilePattern = function (ast, locales, formats, plura
 
 MessageFormat.prototype._findPluralRuleFunction = function (locale) {
     var localeData = MessageFormat.__localeData__;
-    var data       = localeData[locale.toLowerCase()];
+    var data = localeData[locale.toLowerCase()];
 
     // The locale data is de-duplicated, so we have to traverse the locale's
     // hierarchy until we find a `pluralRuleFunction` to return.
